@@ -1,0 +1,1042 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Alecrim · Estoque da Cozinha</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌿</text></svg>">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#2C4126">
+<style>
+  :root{
+    /* Paleta Alecrim — verde-ervas, linho quente, flor de alecrim (lilás) e barro */
+    --paper:#F6F3EA; --card:#FFFDF8; --ink:#26301F; --muted:#71785F;
+    --verde:#3F5A36; --verde-escuro:#2C4126; --verde-suave:#E6ECDC;
+    --flor:#6E77B4; --flor-clara:#C3C9EC;
+    --ambar:#96660F; --ambar-suave:#F8EFD8;
+    --vermelho:#A6402D; --vermelho-suave:#F7E7E1;
+    --linha:#E2DDCC; --sombra:0 1px 3px rgba(44,65,38,.09);
+  }
+  *{box-sizing:border-box; margin:0; padding:0}
+  html{font-size:17px}
+  body{
+    font-family:"Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif;
+    background:var(--paper); color:var(--ink); line-height:1.45;
+  }
+  button, input, select, textarea{font:inherit; color:inherit}
+  :focus-visible{outline:3px solid var(--verde); outline-offset:2px}
+
+  /* ===== Cabeçalho ===== */
+  header{
+    background:linear-gradient(160deg, var(--verde-escuro), var(--verde) 70%);
+    color:#F3F6EC;
+    padding:24px 24px 22px;
+    border-bottom:5px solid #24361F;
+  }
+  .header-linha{max-width:1180px; margin:0 auto; display:flex; flex-wrap:wrap; align-items:center; gap:10px 24px}
+  .marca{display:flex; align-items:center; gap:14px; flex:1; min-width:260px}
+  .raminho{flex-shrink:0}
+  .eyebrow{
+    font-size:.78rem; text-transform:uppercase; letter-spacing:2.5px;
+    color:var(--flor-clara); margin-bottom:2px;
+  }
+  header h1{
+    font-family:Georgia, "Times New Roman", serif; font-style:italic;
+    font-size:2.15rem; font-weight:700; letter-spacing:.5px; line-height:1.1;
+  }
+  header h1 .sub{
+    font-style:normal; font-family:"Segoe UI", system-ui, sans-serif;
+    font-size:1rem; font-weight:400; color:#CFDCC2; letter-spacing:.3px;
+  }
+  header .data-hoje{font-size:1rem; opacity:.85; text-transform:capitalize}
+  header .frase{max-width:1180px; margin:10px auto 0; font-size:1.05rem; opacity:.95}
+  header .frase strong{color:#F3D89A}
+
+  main{max-width:1180px; margin:0 auto; padding:20px 24px 40px}
+
+  /* ===== Aviso de backup ===== */
+  .aviso{
+    background:var(--ambar-suave); border:1px solid #E3C98F; border-radius:10px;
+    padding:12px 16px; margin-bottom:18px; display:flex; flex-wrap:wrap; gap:10px; align-items:center;
+  }
+  .aviso[hidden]{display:none}
+  .aviso p{flex:1; min-width:220px}
+  .aviso strong{color:var(--ambar)}
+
+  /* ===== Cards resumo ===== */
+  .cards{display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:14px; margin-bottom:18px}
+  .card{
+    background:var(--card); border:1px solid var(--linha); border-radius:12px;
+    border-top:3px solid var(--verde); padding:14px 18px; box-shadow:var(--sombra);
+  }
+  .card.alerta-vermelho{border-top-color:var(--vermelho)}
+  .card.alerta-ambar{border-top-color:var(--ambar)}
+  .card .num{font-size:2rem; font-weight:700; font-variant-numeric:tabular-nums}
+  .card .rotulo{color:var(--muted); font-size:.95rem}
+  .card.alerta-vermelho .num{color:var(--vermelho)}
+  .card.alerta-ambar .num{color:var(--ambar)}
+  .card.ok .num{color:var(--verde)}
+
+  /* ===== Barra de ações ===== */
+  .acoes{display:flex; flex-wrap:wrap; gap:12px; align-items:center; margin-bottom:14px}
+  .btn{
+    border:none; border-radius:10px; padding:13px 22px; font-size:1.05rem; font-weight:600;
+    cursor:pointer; box-shadow:var(--sombra);
+  }
+  .btn:hover{filter:brightness(1.06)}
+  .btn-entrada{background:var(--verde); color:#fff}
+  .btn-saida{background:var(--vermelho); color:#fff}
+  .btn-claro{background:var(--card); border:1px solid var(--linha)}
+  .btn-mini{padding:7px 14px; font-size:.92rem; border-radius:8px}
+  .acoes input[type=search]{
+    flex:1; min-width:200px; padding:12px 14px; border:1px solid var(--linha); border-radius:10px;
+    background:var(--card);
+  }
+
+  /* ===== Chips de categoria ===== */
+  .chips{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:18px}
+  .chip{
+    border:1px solid var(--linha); background:var(--card); border-radius:999px;
+    padding:7px 16px; cursor:pointer; font-size:.95rem;
+  }
+  .chip.ativo{background:var(--verde-escuro); color:#fff; border-color:var(--verde-escuro)}
+
+  /* ===== Tabela ===== */
+  .painel{background:var(--card); border:1px solid var(--linha); border-radius:12px; box-shadow:var(--sombra); margin-bottom:22px; overflow:hidden}
+  .painel h2{
+    font-family:Georgia, serif; font-style:italic; font-size:1.25rem;
+    color:var(--verde-escuro); padding:16px 20px 12px;
+  }
+  .painel h2 small{font-family:"Segoe UI",system-ui,sans-serif; color:var(--muted); font-weight:400; font-size:.85rem; margin-left:8px}
+  .rolagem{overflow-x:auto}
+  table{border-collapse:collapse; width:100%; min-width:960px}
+  th{
+    text-align:left; font-size:.82rem; text-transform:uppercase; letter-spacing:.4px;
+    color:var(--muted); padding:8px 12px; border-bottom:2px solid var(--linha); white-space:nowrap;
+  }
+  td{padding:10px 12px; border-bottom:1px solid var(--linha); font-variant-numeric:tabular-nums; vertical-align:middle}
+  th.num, td.num{text-align:right}
+  tr.categoria-cab td{
+    background:var(--verde-suave); font-weight:700; font-size:.82rem;
+    text-transform:uppercase; letter-spacing:1.5px; color:var(--verde-escuro);
+    border-top:1px solid var(--linha); padding:8px 12px;
+  }
+  tr.linha-produto{cursor:pointer}
+  tr.linha-produto:hover{background:#FAFAF6}
+  .seta{display:inline-block; width:1em; color:var(--muted); transition:transform .15s}
+  tr.aberta .seta{transform:rotate(90deg)}
+  .nome-produto{font-weight:600; white-space:nowrap}
+  .saldo-grande{font-size:1.1rem; font-weight:700}
+  td.c-saldo{white-space:nowrap}
+  .traco{color:var(--muted)}
+
+  .badge{
+    display:inline-block; border-radius:7px; padding:3px 10px; font-size:.82rem; font-weight:700;
+    white-space:nowrap;
+  }
+  .badge + .badge{margin-left:5px}
+  .b-ok{background:var(--verde-suave); color:var(--verde-escuro)}
+  .b-comprar{background:var(--vermelho-suave); color:var(--vermelho)}
+  .b-vencendo{background:var(--ambar-suave); color:var(--ambar)}
+  .b-vencido{background:var(--vermelho); color:#fff}
+
+  /* Detalhe expandido */
+  tr.detalhe > td{background:#FBFAF6; padding:16px 20px 20px}
+  .detalhe-grade{display:grid; grid-template-columns:1fr 1fr; gap:20px}
+  .detalhe-grade h3{
+    font-size:.78rem; text-transform:uppercase; letter-spacing:1.5px;
+    margin-bottom:8px; color:var(--flor);
+  }
+  .subtabela{min-width:0; width:100%}
+  .subtabela th{font-size:.75rem; padding:5px 8px}
+  .subtabela td{padding:6px 8px; font-size:.92rem; border-bottom:1px solid #ECEAE0}
+  .mov-entrada{color:var(--verde-escuro); font-weight:600}
+  .mov-saida{color:var(--vermelho); font-weight:600}
+  .detalhe-acoes{margin-top:14px; display:flex; gap:10px; flex-wrap:wrap}
+  .btn-excluir-mov{border:none; background:none; color:var(--vermelho); cursor:pointer; font-size:.85rem; text-decoration:underline}
+  .vazio-sub{color:var(--muted); font-size:.92rem}
+
+  /* ===== Lista de compras ===== */
+  #listaCompras table{min-width:520px}
+  .vazio{padding:14px 20px 20px; color:var(--muted)}
+
+  /* ===== Rodapé ===== */
+  footer{
+    max-width:1180px; margin:0 auto; padding:0 24px 60px;
+  }
+  .backup-caixa{
+    background:var(--card); border:1px dashed #B9B6A8; border-radius:12px; padding:16px 20px;
+  }
+  .backup-caixa h2{font-family:Georgia,serif; font-style:italic; color:var(--verde-escuro); font-size:1.15rem; margin-bottom:6px}
+  .backup-caixa p{color:var(--muted); font-size:.95rem; margin-bottom:12px}
+  .backup-caixa .linha-botoes{display:flex; gap:10px; flex-wrap:wrap}
+
+  /* ===== Modais ===== */
+  dialog{
+    border:none; border-radius:14px; padding:0; margin:auto;
+    width:min(480px, calc(100vw - 32px));
+    box-shadow:0 10px 40px rgba(0,0,0,.25);
+  }
+  dialog::backdrop{background:rgba(36,40,32,.45)}
+  .dlg-cab{background:var(--verde); color:#fff; padding:14px 20px; font-family:Georgia,serif; font-style:italic; font-size:1.2rem; font-weight:700}
+  dialog.dlg-vermelho .dlg-cab{background:var(--vermelho)}
+  .dlg-corpo{padding:18px 20px 20px}
+  .campo{margin-bottom:14px}
+  .campo label{display:block; font-weight:600; font-size:.95rem; margin-bottom:4px}
+  .campo .dica{font-weight:400; color:var(--muted); font-size:.85rem}
+  .campo input, .campo select{
+    width:100%; padding:11px 12px; border:1px solid #C9C6B8; border-radius:9px; background:#fff;
+  }
+  .campo input[readonly]{background:var(--paper); color:var(--muted)}
+  .duas-colunas{display:grid; grid-template-columns:1fr 1fr; gap:12px}
+  .dlg-rodape{display:flex; justify-content:flex-end; gap:10px; padding:0 20px 20px}
+  .saldo-dica{background:var(--verde-suave); border-radius:8px; padding:8px 12px; font-size:.92rem; margin-bottom:14px}
+  .saldo-dica.negativa{background:var(--vermelho-suave)}
+
+  /* ===== Impressão: só a lista de compras ===== */
+  .marca-print{display:none}
+  @media print{
+    .marca-print{
+      display:block; padding:4px 20px 0;
+      font-family:Georgia, serif; font-style:italic; font-size:1.4rem; color:var(--verde-escuro);
+    }
+    body.imprimir-lista header, body.imprimir-lista .cards, body.imprimir-lista .acoes,
+    body.imprimir-lista .chips, body.imprimir-lista .aviso,
+    body.imprimir-lista #painelEstoque, body.imprimir-lista footer,
+    body.imprimir-lista .btn{display:none !important}
+    body.imprimir-lista{background:#fff}
+    body.imprimir-lista #listaCompras{border:none; box-shadow:none}
+  }
+
+  @media (max-width:720px){
+    html{font-size:16px}
+    .detalhe-grade{grid-template-columns:1fr}
+    header h1{font-size:1.5rem}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-linha">
+    <div class="marca">
+      <svg class="raminho" width="44" height="62" viewBox="0 0 44 62" fill="none" aria-hidden="true">
+        <!-- raminho de alecrim: caule, folhas-agulha e flores lilás -->
+        <path d="M22 60 C20 46 24 30 21 8" stroke="#BFD3AE" stroke-width="2" stroke-linecap="round"/>
+        <g stroke="#9DBE87" stroke-width="1.8" stroke-linecap="round">
+          <path d="M21.5 52 L11 46"/><path d="M21.8 52.5 L33 47"/>
+          <path d="M21 44 L10 39"/><path d="M21.5 44.5 L33 40"/>
+          <path d="M21.5 36 L11 30"/><path d="M22 36.5 L33 31.5"/>
+          <path d="M21 28 L12 22"/><path d="M21.5 28.5 L32 23.5"/>
+          <path d="M21 20 L13 15"/><path d="M21.3 20.3 L30 15.5"/>
+          <path d="M21 13 L15 9"/><path d="M21.2 13.2 L28 9.5"/>
+        </g>
+        <g fill="#C3C9EC">
+          <circle cx="20.5" cy="6" r="2.4"/><circle cx="25" cy="9.5" r="1.9"/><circle cx="16.5" cy="10.5" r="1.7"/>
+        </g>
+      </svg>
+      <div>
+        <div class="eyebrow">Cozinha artesanal · Chapecó</div>
+        <h1>Alecrim <span class="sub">· estoque da cozinha</span></h1>
+      </div>
+    </div>
+    <span class="data-hoje" id="dataHoje"></span>
+  </div>
+  <p class="frase" id="fraseResumo"></p>
+</header>
+
+<main>
+  <div class="aviso" id="avisoBackup" hidden>
+    <p>⚠️ <strong>Faça um backup!</strong> <span id="avisoBackupTexto"></span> Se o computador der problema, o backup é a sua garantia.</p>
+    <button class="btn btn-claro btn-mini" onclick="fazerBackup()">Fazer backup agora</button>
+  </div>
+
+  <section class="cards">
+    <div class="card" id="cardComprar"><div class="num">0</div><div class="rotulo">itens para comprar</div></div>
+    <div class="card" id="cardValidade"><div class="num">0</div><div class="rotulo">lotes vencidos ou vencendo (7 dias)</div></div>
+    <div class="card ok" id="cardProdutos"><div class="num">0</div><div class="rotulo">produtos cadastrados</div></div>
+  </section>
+
+  <section class="acoes">
+    <button class="btn btn-entrada" onclick="abrirEntrada()">➕ Entrada</button>
+    <button class="btn btn-saida" onclick="abrirSaida()">➖ Saída</button>
+    <button class="btn btn-claro" onclick="abrirProduto()">Cadastrar produto</button>
+    <input type="search" id="busca" placeholder="Buscar produto… (ex.: arroz)" oninput="render()">
+  </section>
+
+  <div class="chips" id="chips"></div>
+
+  <section class="painel" id="painelEstoque">
+    <h2>Estoque atual <small>clique num produto para ver os lotes por validade e o histórico</small></h2>
+    <div class="rolagem">
+      <table>
+        <thead>
+          <tr>
+            <th></th>
+            <th>Produto</th>
+            <th class="num">Saldo</th>
+            <th class="num">Consumo/dia</th>
+            <th class="num">Consumo/semana</th>
+            <th class="num">Últimos 30 dias</th>
+            <th class="num">Mínimo p/ 1 dia</th>
+            <th class="num">Estoque médio</th>
+            <th>Próx. validade</th>
+            <th>Situação</th>
+          </tr>
+        </thead>
+        <tbody id="corpoTabela"></tbody>
+      </table>
+    </div>
+    <p class="vazio" id="tabelaVazia" hidden>Nenhum produto encontrado.</p>
+  </section>
+
+  <section class="painel" id="listaCompras">
+    <p class="marca-print">Alecrim · Cozinha Artesanal</p>
+    <h2>🧺 Lista de compras <small>gerada pelo consumo médio — sugestão para cobrir 7 dias</small></h2>
+    <div class="rolagem" id="comprasWrap">
+      <table>
+        <thead>
+          <tr><th>Produto</th><th class="num">Saldo atual</th><th class="num">Mínimo p/ 1 dia</th><th class="num">Sugestão de compra</th></tr>
+        </thead>
+        <tbody id="corpoCompras"></tbody>
+      </table>
+    </div>
+    <p class="vazio" id="comprasVazia" hidden>Tudo certo — nenhum item precisa de compra agora. 👍</p>
+    <div style="padding:0 20px 18px"><button class="btn btn-claro btn-mini" onclick="imprimirLista()">🖨️ Imprimir lista</button></div>
+  </section>
+</main>
+
+<footer>
+  <div class="backup-caixa">
+    <h2>💾 Segurança dos dados</h2>
+    <p>Os dados ficam salvos neste computador, neste navegador. Faça um backup <strong>toda semana</strong>: o arquivo baixado vai para a pasta Downloads — guarde uma cópia (pendrive ou e-mail). <span id="infoUltimoBackup"></span></p>
+    <div class="linha-botoes">
+      <button class="btn btn-claro btn-mini" onclick="fazerBackup()">Fazer backup (baixar arquivo)</button>
+      <button class="btn btn-claro btn-mini" onclick="document.getElementById('arqImportar').click()">Restaurar backup</button>
+      <button class="btn btn-claro btn-mini" onclick="exportarCSV()">Exportar para Excel (CSV)</button>
+    </div>
+  </div>
+</footer>
+
+<input type="file" id="arqImportar" accept=".json,application/json" hidden onchange="restaurarBackup(this)">
+
+<!-- ===== Modal: Entrada ===== -->
+<dialog id="dlgEntrada">
+  <div class="dlg-cab">➕ Entrada de produto</div>
+  <form method="dialog" class="dlg-corpo" onsubmit="return salvarEntrada(event)">
+    <div class="campo">
+      <label for="entProduto">Produto</label>
+      <select id="entProduto" required onchange="entradaProdutoMudou()"></select>
+    </div>
+    <div class="duas-colunas">
+      <div class="campo">
+        <label for="entData">Dia que chegou</label>
+        <input type="date" id="entData" required>
+      </div>
+      <div class="campo">
+        <label for="entQtd">Quantidade <span class="dica" id="entUnidade"></span></label>
+        <input type="text" id="entQtd" inputmode="decimal" placeholder="ex.: 5 ou 2,5" required>
+      </div>
+    </div>
+    <div class="campo">
+      <label for="entFornecedor">Fornecedor <span class="dica">(opcional)</span></label>
+      <input type="text" id="entFornecedor" placeholder="ex.: Atacadão">
+    </div>
+    <div class="duas-colunas">
+      <div class="campo">
+        <label for="entFabricacao">Fabricação <span class="dica">(opcional)</span></label>
+        <input type="date" id="entFabricacao">
+      </div>
+      <div class="campo">
+        <label for="entValidade">Validade <span class="dica">(opcional)</span></label>
+        <input type="date" id="entValidade">
+      </div>
+    </div>
+    <div class="dlg-rodape" style="padding:0">
+      <button type="button" class="btn btn-claro" onclick="dlgEntrada.close()">Cancelar</button>
+      <button type="submit" class="btn btn-entrada">Salvar entrada</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- ===== Modal: Saída ===== -->
+<dialog id="dlgSaida" class="dlg-vermelho">
+  <div class="dlg-cab">➖ Saída (baixa) de produto</div>
+  <form method="dialog" class="dlg-corpo" onsubmit="return salvarSaida(event)">
+    <div class="campo">
+      <label for="saiProduto">Produto</label>
+      <select id="saiProduto" required onchange="saidaProdutoMudou()"></select>
+    </div>
+    <div class="saldo-dica" id="saiSaldoDica" hidden></div>
+    <div class="duas-colunas">
+      <div class="campo">
+        <label for="saiData">Dia da saída</label>
+        <input type="date" id="saiData" required>
+      </div>
+      <div class="campo">
+        <label for="saiQtd">Quantidade <span class="dica" id="saiUnidade"></span></label>
+        <input type="text" id="saiQtd" inputmode="decimal" placeholder="ex.: 3 ou 1,5" required>
+      </div>
+    </div>
+    <div class="campo">
+      <label for="saiObs">Observação <span class="dica">(opcional)</span></label>
+      <input type="text" id="saiObs" placeholder="ex.: buffet de sábado">
+    </div>
+    <div class="dlg-rodape" style="padding:0">
+      <button type="button" class="btn btn-claro" onclick="dlgSaida.close()">Cancelar</button>
+      <button type="submit" class="btn btn-saida">Salvar saída</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- ===== Modal: Produto ===== -->
+<dialog id="dlgProduto">
+  <div class="dlg-cab" id="dlgProdutoTitulo">Cadastrar produto</div>
+  <form method="dialog" class="dlg-corpo" onsubmit="return salvarProduto(event)">
+    <input type="hidden" id="prodId">
+    <div class="campo">
+      <label for="prodNome">Nome do produto</label>
+      <input type="text" id="prodNome" required placeholder="ex.: Farinha de trigo">
+    </div>
+    <div class="duas-colunas">
+      <div class="campo">
+        <label for="prodCategoria">Categoria</label>
+        <select id="prodCategoria" required></select>
+      </div>
+      <div class="campo">
+        <label for="prodUnidade">Unidade de medida</label>
+        <select id="prodUnidade" required>
+          <option value="kg">kg (quilo)</option>
+          <option value="g">g (grama)</option>
+          <option value="L">L (litro)</option>
+          <option value="mL">mL (mililitro)</option>
+          <option value="un">un (unidade)</option>
+          <option value="pct">pct (pacote)</option>
+          <option value="cx">cx (caixa)</option>
+          <option value="dz">dz (dúzia)</option>
+        </select>
+      </div>
+    </div>
+    <div class="campo">
+      <label for="prodMinimo">Estoque mínimo <span class="dica">(opcional — se deixar vazio, o sistema calcula sozinho pelo consumo de 1 dia)</span></label>
+      <input type="text" id="prodMinimo" inputmode="decimal" placeholder="automático">
+    </div>
+    <div class="dlg-rodape" style="padding:0; justify-content:space-between">
+      <button type="button" class="btn btn-claro btn-mini" id="btnExcluirProduto" hidden onclick="excluirProduto()" style="color:var(--vermelho)">Excluir produto</button>
+      <span style="display:flex; gap:10px">
+        <button type="button" class="btn btn-claro" onclick="dlgProduto.close()">Cancelar</button>
+        <button type="submit" class="btn btn-entrada">Salvar</button>
+      </span>
+    </div>
+  </form>
+</dialog>
+
+<script>
+'use strict';
+/* =====================================================================
+   Estoque da Cozinha — sistema local de controle de estoque
+   Dados salvos no navegador (localStorage). Sem internet, sem servidor.
+   ===================================================================== */
+
+const CHAVE = 'estoque-cozinha-v1';
+const CATEGORIAS = ['Perecíveis', 'Não perecíveis', 'Embalagens', 'Limpeza', 'Materiais de consumo'];
+const DIAS_COBERTURA = 7;   // a lista de compras sugere quantidade para cobrir 7 dias
+const JANELA_DIAS = 30;     // janela usada para consumo médio e estoque médio
+
+let dados = null;
+let filtroCategoria = 'Todas';
+let linhasAbertas = new Set();
+let aoSalvarProduto = null; // callback quando o cadastro é aberto de dentro da entrada/saída
+
+/* ---------- datas (sempre no formato AAAA-MM-DD internamente) ---------- */
+function paraISO(d){
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+function deISO(s){ const [a,m,d] = s.split('-').map(Number); return new Date(a, m-1, d); }
+function hojeISO(){ return paraISO(new Date()); }
+function somaDias(iso, n){ const d = deISO(iso); d.setDate(d.getDate()+n); return paraISO(d); }
+function difDias(deIso, ateIso){ return Math.round((deISO(ateIso) - deISO(deIso)) / 86400000); }
+function fmtData(iso){ if(!iso) return '—'; const [a,m,d] = iso.split('-'); return d + '/' + m + '/' + a; }
+
+/* ---------- números ---------- */
+const nf = new Intl.NumberFormat('pt-BR', {maximumFractionDigits: 2});
+function fmt(n){ return (n === null || n === undefined || isNaN(n)) ? '—' : nf.format(n); }
+function lerNumero(texto){
+  const n = parseFloat(String(texto).trim().replace(/\./g, '').replace(',', '.'));
+  // aceita "2,5" e "2.5": se tinha ponto e não vírgula, tenta de novo direto
+  if (isNaN(n)) return NaN;
+  if (String(texto).includes('.') && !String(texto).includes(',')) return parseFloat(String(texto).trim());
+  return n;
+}
+function esc(s){ return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+/* ---------- armazenamento ---------- */
+function salvar(){ localStorage.setItem(CHAVE, JSON.stringify(dados)); }
+
+function carregar(){
+  try{
+    const bruto = localStorage.getItem(CHAVE);
+    if (bruto) { dados = JSON.parse(bruto); return; }
+  }catch(e){ /* dados corrompidos: recomeça com o seed */ }
+  dados = dadosIniciais();
+  salvar();
+}
+
+function novoId(){ dados.proximoId = (dados.proximoId || 1) + 1; return dados.proximoId; }
+
+/* Produtos e entradas que já estavam na planilha dela (16/07/2026) */
+function dadosIniciais(){
+  const P = (id, nome, categoria, unidade) => ({id, nome, categoria, unidade, minimoManual: null});
+  const E = (id, produtoId, qtd) => ({id, produtoId, data:'2026-07-16', qtd, fornecedor:'', fabricacao:'', validade:''});
+  return {
+    versao: 1,
+    proximoId: 100,
+    ultimoBackup: null,
+    produtos: [
+      P(1,  'Açúcar',            'Não perecíveis', 'kg'),
+      P(2,  'Arroz',             'Não perecíveis', 'kg'),
+      P(3,  'Amido de milho',    'Não perecíveis', 'kg'),
+      P(4,  'Ameixa seca',       'Não perecíveis', 'pct'),
+      P(5,  'Coco ralado',       'Não perecíveis', 'pct'),
+      P(6,  'Farinha de rosca',  'Não perecíveis', 'kg'),
+      P(7,  'Feijão preto',      'Não perecíveis', 'kg'),
+      P(8,  'Farinha de milho',  'Não perecíveis', 'kg'),
+      P(9,  'Leite em pó',       'Não perecíveis', 'un'),
+      P(10, 'Feijão branco',     'Não perecíveis', 'un'),
+      P(11, 'Margarina',         'Perecíveis',     'un'),
+      P(12, 'Detergente neutro', 'Limpeza',        'un'),
+      P(13, 'Água sanitária',    'Limpeza',        'un'),
+      P(14, 'Luva descartável',  'Materiais de consumo', 'cx')
+    ],
+    entradas: [
+      E(50, 1, 45), E(51, 2, 30), E(52, 3, 20), E(53, 3, 10), E(54, 4, 1),
+      E(55, 5, 24), E(56, 6, 20), E(57, 7, 30), E(58, 7, 27), E(59, 8, 27),
+      E(60, 9, 10), E(61, 10, 30), E(62, 11, 12), E(63, 12, 24), E(64, 13, 12)
+    ],
+    saidas: []
+  };
+}
+
+/* ---------- cálculos ---------- */
+function produtoPorId(id){ return dados.produtos.find(p => p.id === id); }
+function entradasDe(pid){ return dados.entradas.filter(e => e.produtoId === pid); }
+function saidasDe(pid){ return dados.saidas.filter(s => s.produtoId === pid); }
+
+function saldoDe(pid){
+  const e = entradasDe(pid).reduce((t, x) => t + x.qtd, 0);
+  const s = saidasDe(pid).reduce((t, x) => t + x.qtd, 0);
+  return e - s;
+}
+
+/* Lotes: cada entrada é um lote. As saídas consomem primeiro o lote que
+   vence primeiro; lote sem validade entra na fila pela data de chegada
+   (estoque antigo sem data marcada sai antes de lote que vence longe). */
+function lotesDe(pid){
+  const chave = e => e.validade || e.data;
+  const lotes = entradasDe(pid)
+    .slice()
+    .sort((a, b) => chave(a).localeCompare(chave(b)) || a.data.localeCompare(b.data))
+    .map(e => ({...e, restante: e.qtd}));
+  let aBaixar = saidasDe(pid).reduce((t, s) => t + s.qtd, 0);
+  for (const lote of lotes){
+    if (aBaixar <= 0) break;
+    const usa = Math.min(lote.restante, aBaixar);
+    lote.restante -= usa;
+    aBaixar -= usa;
+  }
+  return lotes.filter(l => l.restante > 0.000001);
+}
+
+function estatisticasDe(pid){
+  const produto = produtoPorId(pid);
+  const hoje = hojeISO();
+  const saidas = saidasDe(pid);
+  const saldo = saldoDe(pid);
+
+  // consumo dos últimos 30 dias
+  const inicioJanela = somaDias(hoje, -(JANELA_DIAS - 1));
+  const consumo30 = saidas.filter(s => s.data >= inicioJanela && s.data <= hoje).reduce((t, s) => t + s.qtd, 0);
+
+  // consumo médio diário: divide pelos dias desde a primeira saída (máx. 30)
+  let consumoDia = null;
+  if (saidas.length){
+    const primeira = saidas.reduce((min, s) => s.data < min ? s.data : min, saidas[0].data);
+    const dias = Math.max(1, Math.min(JANELA_DIAS, difDias(primeira, hoje) + 1));
+    consumoDia = consumo30 / dias;
+  }
+
+  const minimo1dia = (produto.minimoManual !== null && produto.minimoManual !== undefined && produto.minimoManual !== '')
+    ? produto.minimoManual
+    : consumoDia;
+
+  // estoque médio: média do saldo no fim de cada dia da janela
+  const movs = [
+    ...entradasDe(pid).map(e => ({data: e.data, q: e.qtd})),
+    ...saidas.map(s => ({data: s.data, q: -s.qtd}))
+  ];
+  let estoqueMedio = null;
+  if (movs.length){
+    const primeiroMov = movs.reduce((min, m) => m.data < min ? m.data : min, movs[0].data);
+    const n = Math.max(1, Math.min(JANELA_DIAS, difDias(primeiroMov, hoje) + 1));
+    const inicio = somaDias(hoje, -(n - 1));
+    let saldoDia = movs.filter(m => m.data < inicio).reduce((t, m) => t + m.q, 0);
+    let soma = 0;
+    for (let i = 0; i < n; i++){
+      const dia = somaDias(inicio, i);
+      saldoDia += movs.filter(m => m.data === dia).reduce((t, m) => t + m.q, 0);
+      soma += saldoDia;
+    }
+    estoqueMedio = soma / n;
+  }
+
+  // validade
+  const lotes = lotesDe(pid);
+  const proximaValidade = lotes.filter(l => l.validade).map(l => l.validade).sort()[0] || null;
+  const temVencido = lotes.some(l => l.validade && l.validade < hoje);
+  const temVencendo = lotes.some(l => l.validade && l.validade >= hoje && difDias(hoje, l.validade) <= 7);
+
+  // situação e sugestão de compra
+  const precisaComprar = (minimo1dia !== null && minimo1dia > 0 && saldo < minimo1dia) || (saldo <= 0 && saidas.length > 0);
+  let sugestaoCompra = null;
+  if (precisaComprar){
+    sugestaoCompra = consumoDia !== null ? Math.max(0, consumoDia * DIAS_COBERTURA - saldo) : (minimo1dia || 0);
+  }
+
+  const etiquetas = [];
+  if (temVencido) etiquetas.push({classe: 'b-vencido', texto: 'VENCIDO'});
+  if (precisaComprar) etiquetas.push({classe: 'b-comprar', texto: 'COMPRAR'});
+  if (!temVencido && temVencendo) etiquetas.push({classe: 'b-vencendo', texto: 'VENCENDO'});
+  if (!etiquetas.length) etiquetas.push({classe: 'b-ok', texto: 'OK'});
+
+  return {produto, saldo, consumoDia, consumoSemana: consumoDia !== null ? consumoDia * 7 : null,
+          consumo30, minimo1dia, estoqueMedio, proximaValidade, temVencido, temVencendo,
+          precisaComprar, sugestaoCompra, etiquetas, lotes};
+}
+
+/* ---------- interface ---------- */
+function render(){
+  const hoje = hojeISO();
+  document.getElementById('dataHoje').textContent =
+    new Date().toLocaleDateString('pt-BR', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
+
+  const stats = dados.produtos.map(p => estatisticasDe(p.id));
+  const nComprar = stats.filter(s => s.precisaComprar).length;
+  const nValidade = stats.reduce((t, s) => t + s.lotes.filter(l => l.validade && difDias(hoje, l.validade) <= 7).length, 0);
+
+  // frase do topo
+  const frase = document.getElementById('fraseResumo');
+  if (!dados.saidas.length && !nValidade){
+    frase.innerHTML = 'Comece dando <strong>entrada</strong> no que chegar e <strong>saída</strong> no que for usado no dia — os cálculos aparecem sozinhos.';
+  } else {
+    const partes = [];
+    partes.push(nComprar ? `<strong>${nComprar} ${nComprar === 1 ? 'item precisa' : 'itens precisam'} de compra</strong>` : 'nenhuma compra urgente');
+    partes.push(nValidade ? `<strong>${nValidade} ${nValidade === 1 ? 'lote vencendo' : 'lotes vencendo'}</strong>` : 'nenhum lote vencendo');
+    frase.innerHTML = 'Hoje: ' + partes.join(' · ') + '.';
+  }
+
+  // cards
+  const cardComprar = document.getElementById('cardComprar');
+  cardComprar.querySelector('.num').textContent = nComprar;
+  cardComprar.className = 'card ' + (nComprar ? 'alerta-vermelho' : 'ok');
+  const cardValidade = document.getElementById('cardValidade');
+  cardValidade.querySelector('.num').textContent = nValidade;
+  cardValidade.className = 'card ' + (nValidade ? 'alerta-ambar' : 'ok');
+  document.getElementById('cardProdutos').querySelector('.num').textContent = dados.produtos.length;
+
+  renderChips();
+  renderTabela(stats);
+  renderCompras(stats);
+  renderBackupInfo();
+}
+
+function renderChips(){
+  const alvo = document.getElementById('chips');
+  alvo.innerHTML = ['Todas', ...CATEGORIAS].map(c =>
+    `<button class="chip ${c === filtroCategoria ? 'ativo' : ''}" onclick="filtrarCategoria('${c}')">${c}</button>`
+  ).join('');
+}
+function filtrarCategoria(c){ filtroCategoria = c; render(); }
+
+function renderTabela(stats){
+  const busca = document.getElementById('busca').value.trim().toLowerCase();
+  const corpo = document.getElementById('corpoTabela');
+  let html = '';
+  let total = 0;
+
+  for (const cat of CATEGORIAS){
+    if (filtroCategoria !== 'Todas' && filtroCategoria !== cat) continue;
+    const doGrupo = stats
+      .filter(s => s.produto.categoria === cat)
+      .filter(s => !busca || s.produto.nome.toLowerCase().includes(busca))
+      .sort((a, b) => a.produto.nome.localeCompare(b.produto.nome, 'pt-BR'));
+    if (!doGrupo.length) continue;
+
+    html += `<tr class="categoria-cab"><td colspan="10">${cat}</td></tr>`;
+    for (const s of doGrupo){
+      total++;
+      const aberta = linhasAbertas.has(s.produto.id);
+      html += `
+        <tr class="linha-produto ${aberta ? 'aberta' : ''}" onclick="alternarLinha(${s.produto.id})">
+          <td><span class="seta">▶</span></td>
+          <td class="nome-produto">${esc(s.produto.nome)}</td>
+          <td class="num c-saldo"><span class="saldo-grande">${fmt(s.saldo)}</span> <small>${esc(s.produto.unidade)}</small></td>
+          <td class="num">${s.consumoDia === null ? '<span class="traco">—</span>' : fmt(s.consumoDia)}</td>
+          <td class="num">${s.consumoSemana === null ? '<span class="traco">—</span>' : fmt(s.consumoSemana)}</td>
+          <td class="num">${s.consumoDia === null ? '<span class="traco">—</span>' : fmt(s.consumo30)}</td>
+          <td class="num">${s.minimo1dia === null ? '<span class="traco">—</span>' : fmt(s.minimo1dia)}</td>
+          <td class="num">${s.estoqueMedio === null ? '<span class="traco">—</span>' : fmt(s.estoqueMedio)}</td>
+          <td>${fmtData(s.proximaValidade)}</td>
+          <td>${s.etiquetas.map(e => `<span class="badge ${e.classe}">${e.texto}</span>`).join('')}</td>
+        </tr>`;
+      if (aberta) html += renderDetalhe(s);
+    }
+  }
+
+  corpo.innerHTML = html;
+  document.getElementById('tabelaVazia').hidden = total > 0;
+}
+
+function renderDetalhe(s){
+  const hoje = hojeISO();
+  const lotesHtml = s.lotes.length ? `
+    <table class="subtabela">
+      <thead><tr><th>Validade</th><th class="num">Restante</th><th>Chegou em</th><th>Fornecedor</th></tr></thead>
+      <tbody>${s.lotes.map(l => {
+        let cor = '';
+        if (l.validade && l.validade < hoje) cor = 'style="color:var(--vermelho); font-weight:700"';
+        else if (l.validade && difDias(hoje, l.validade) <= 7) cor = 'style="color:var(--ambar); font-weight:700"';
+        return `<tr><td ${cor}>${fmtData(l.validade)}</td><td class="num">${fmt(l.restante)} ${esc(s.produto.unidade)}</td><td>${fmtData(l.data)}</td><td>${esc(l.fornecedor) || '—'}</td></tr>`;
+      }).join('')}</tbody>
+    </table>` : '<p class="vazio-sub">Sem estoque no momento.</p>';
+
+  const movs = [
+    ...entradasDe(s.produto.id).map(e => ({tipo: 'entrada', ...e})),
+    ...saidasDe(s.produto.id).map(x => ({tipo: 'saida', ...x}))
+  ].sort((a, b) => b.data.localeCompare(a.data) || b.id - a.id).slice(0, 12);
+
+  const movsHtml = movs.length ? `
+    <table class="subtabela">
+      <thead><tr><th>Data</th><th>Tipo</th><th class="num">Qtd.</th><th>Detalhe</th><th></th></tr></thead>
+      <tbody>${movs.map(m => `
+        <tr>
+          <td>${fmtData(m.data)}</td>
+          <td class="${m.tipo === 'entrada' ? 'mov-entrada' : 'mov-saida'}">${m.tipo === 'entrada' ? '➕ Entrada' : '➖ Saída'}</td>
+          <td class="num">${fmt(m.qtd)}</td>
+          <td>${esc(m.tipo === 'entrada' ? (m.fornecedor || '') : (m.obs || '')) || '—'}</td>
+          <td><button class="btn-excluir-mov" onclick="event.stopPropagation(); excluirMovimento('${m.tipo}', ${m.id})">excluir</button></td>
+        </tr>`).join('')}</tbody>
+    </table>` : '<p class="vazio-sub">Nenhum movimento ainda.</p>';
+
+  return `
+    <tr class="detalhe"><td colspan="10" onclick="event.stopPropagation()">
+      <div class="detalhe-grade">
+        <div><h3>Lotes em estoque (por validade)</h3>${lotesHtml}</div>
+        <div><h3>Últimos movimentos</h3>${movsHtml}</div>
+      </div>
+      <div class="detalhe-acoes">
+        <button class="btn btn-claro btn-mini" onclick="abrirEntrada(${s.produto.id})">➕ Entrada deste produto</button>
+        <button class="btn btn-claro btn-mini" onclick="abrirSaida(${s.produto.id})">➖ Saída deste produto</button>
+        <button class="btn btn-claro btn-mini" onclick="abrirProduto(${s.produto.id})">✏️ Editar produto</button>
+      </div>
+    </td></tr>`;
+}
+
+function alternarLinha(pid){
+  if (linhasAbertas.has(pid)) linhasAbertas.delete(pid); else linhasAbertas.add(pid);
+  render();
+}
+
+function renderCompras(stats){
+  const itens = stats.filter(s => s.precisaComprar)
+    .sort((a, b) => a.produto.nome.localeCompare(b.produto.nome, 'pt-BR'));
+  const corpo = document.getElementById('corpoCompras');
+  corpo.innerHTML = itens.map(s => `
+    <tr>
+      <td class="nome-produto">${esc(s.produto.nome)}</td>
+      <td class="num">${fmt(s.saldo)} ${esc(s.produto.unidade)}</td>
+      <td class="num">${s.minimo1dia === null ? '—' : fmt(s.minimo1dia)}</td>
+      <td class="num"><strong>${s.sugestaoCompra === null ? '—' : fmt(Math.ceil(s.sugestaoCompra * 100) / 100)} ${esc(s.produto.unidade)}</strong></td>
+    </tr>`).join('');
+  document.getElementById('comprasWrap').hidden = !itens.length;
+  document.getElementById('comprasVazia').hidden = !!itens.length;
+}
+
+function imprimirLista(){
+  document.body.classList.add('imprimir-lista');
+  window.print();
+  document.body.classList.remove('imprimir-lista');
+}
+
+/* ---------- selects de produto ---------- */
+function preencherSelectProdutos(select, selecionadoId){
+  let html = '<option value="" disabled ' + (selecionadoId ? '' : 'selected') + '>Escolha o produto…</option>';
+  for (const cat of CATEGORIAS){
+    const doGrupo = dados.produtos.filter(p => p.categoria === cat)
+      .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
+    if (!doGrupo.length) continue;
+    html += `<optgroup label="${cat}">` + doGrupo.map(p =>
+      `<option value="${p.id}" ${p.id === selecionadoId ? 'selected' : ''}>${esc(p.nome)}</option>`
+    ).join('') + '</optgroup>';
+  }
+  html += '<option value="__novo">➕ Cadastrar produto novo…</option>';
+  select.innerHTML = html;
+}
+
+/* ---------- entrada ---------- */
+function abrirEntrada(pid){
+  preencherSelectProdutos(document.getElementById('entProduto'), pid || null);
+  document.getElementById('entData').value = hojeISO();
+  document.getElementById('entQtd').value = '';
+  document.getElementById('entFornecedor').value = '';
+  document.getElementById('entFabricacao').value = '';
+  document.getElementById('entValidade').value = '';
+  entradaProdutoMudou();
+  dlgEntrada.showModal();
+}
+function entradaProdutoMudou(){
+  const sel = document.getElementById('entProduto');
+  if (sel.value === '__novo'){
+    aoSalvarProduto = (novoPid) => { preencherSelectProdutos(sel, novoPid); entradaProdutoMudou(); };
+    abrirProduto();
+    sel.value = '';
+    return;
+  }
+  const p = produtoPorId(Number(sel.value));
+  document.getElementById('entUnidade').textContent = p ? `(em ${p.unidade})` : '';
+}
+function salvarEntrada(ev){
+  ev.preventDefault();
+  const pid = Number(document.getElementById('entProduto').value);
+  const qtd = lerNumero(document.getElementById('entQtd').value);
+  if (!pid){ alert('Escolha o produto.'); return false; }
+  if (isNaN(qtd) || qtd <= 0){ alert('Quantidade inválida. Use números, ex.: 5 ou 2,5'); return false; }
+  const fabricacao = document.getElementById('entFabricacao').value;
+  const validade = document.getElementById('entValidade').value;
+  if (fabricacao && validade && validade < fabricacao){
+    alert('A validade não pode ser antes da fabricação. Confira as datas.');
+    return false;
+  }
+  dados.entradas.push({
+    id: novoId(), produtoId: pid,
+    data: document.getElementById('entData').value || hojeISO(),
+    qtd,
+    fornecedor: document.getElementById('entFornecedor').value.trim(),
+    fabricacao, validade
+  });
+  salvar(); dlgEntrada.close(); render();
+  return false;
+}
+
+/* ---------- saída ---------- */
+function abrirSaida(pid){
+  preencherSelectProdutos(document.getElementById('saiProduto'), pid || null);
+  document.getElementById('saiData').value = hojeISO();
+  document.getElementById('saiQtd').value = '';
+  document.getElementById('saiObs').value = '';
+  saidaProdutoMudou();
+  dlgSaida.showModal();
+}
+function saidaProdutoMudou(){
+  const sel = document.getElementById('saiProduto');
+  const dica = document.getElementById('saiSaldoDica');
+  if (sel.value === '__novo'){
+    aoSalvarProduto = (novoPid) => { preencherSelectProdutos(sel, novoPid); saidaProdutoMudou(); };
+    abrirProduto();
+    sel.value = '';
+    return;
+  }
+  const p = produtoPorId(Number(sel.value));
+  if (p){
+    const saldo = saldoDe(p.id);
+    dica.hidden = false;
+    dica.className = 'saldo-dica' + (saldo <= 0 ? ' negativa' : '');
+    dica.innerHTML = `Saldo atual de <strong>${esc(p.nome)}</strong>: <strong>${fmt(saldo)} ${esc(p.unidade)}</strong>`;
+    document.getElementById('saiUnidade').textContent = `(em ${p.unidade})`;
+  } else {
+    dica.hidden = true;
+    document.getElementById('saiUnidade').textContent = '';
+  }
+}
+function salvarSaida(ev){
+  ev.preventDefault();
+  const pid = Number(document.getElementById('saiProduto').value);
+  const qtd = lerNumero(document.getElementById('saiQtd').value);
+  if (!pid){ alert('Escolha o produto.'); return false; }
+  if (isNaN(qtd) || qtd <= 0){ alert('Quantidade inválida. Use números, ex.: 3 ou 1,5'); return false; }
+  const saldo = saldoDe(pid);
+  if (qtd > saldo){
+    const p = produtoPorId(pid);
+    if (!confirm(`Atenção: o saldo de ${p.nome} é ${fmt(saldo)} ${p.unidade} e você está dando baixa de ${fmt(qtd)}.\nO saldo vai ficar negativo. Salvar mesmo assim?`)) return false;
+  }
+  dados.saidas.push({
+    id: novoId(), produtoId: pid,
+    data: document.getElementById('saiData').value || hojeISO(),
+    qtd,
+    obs: document.getElementById('saiObs').value.trim()
+  });
+  salvar(); dlgSaida.close(); render();
+  return false;
+}
+
+/* ---------- produto ---------- */
+function abrirProduto(pid){
+  const selCat = document.getElementById('prodCategoria');
+  selCat.innerHTML = CATEGORIAS.map(c => `<option value="${c}">${c}</option>`).join('');
+  const p = pid ? produtoPorId(pid) : null;
+  document.getElementById('dlgProdutoTitulo').textContent = p ? 'Editar produto' : 'Cadastrar produto';
+  document.getElementById('prodId').value = p ? p.id : '';
+  document.getElementById('prodNome').value = p ? p.nome : '';
+  selCat.value = p ? p.categoria : CATEGORIAS[0];
+  document.getElementById('prodUnidade').value = p ? p.unidade : 'kg';
+  document.getElementById('prodMinimo').value = (p && p.minimoManual !== null && p.minimoManual !== undefined) ? String(p.minimoManual).replace('.', ',') : '';
+  document.getElementById('btnExcluirProduto').hidden = !p;
+  dlgProduto.showModal();
+}
+function salvarProduto(ev){
+  ev.preventDefault();
+  const id = document.getElementById('prodId').value;
+  const nome = document.getElementById('prodNome').value.trim();
+  if (!nome){ alert('Digite o nome do produto.'); return false; }
+  const duplicado = dados.produtos.find(p => p.nome.toLowerCase() === nome.toLowerCase() && String(p.id) !== id);
+  if (duplicado){ alert(`Já existe um produto chamado "${duplicado.nome}".`); return false; }
+  const minTexto = document.getElementById('prodMinimo').value.trim();
+  let minimoManual = null;
+  if (minTexto){
+    minimoManual = lerNumero(minTexto);
+    if (isNaN(minimoManual) || minimoManual < 0){ alert('Estoque mínimo inválido. Use números ou deixe vazio.'); return false; }
+  }
+  const campos = {
+    nome,
+    categoria: document.getElementById('prodCategoria').value,
+    unidade: document.getElementById('prodUnidade').value,
+    minimoManual
+  };
+  let pid;
+  if (id){
+    Object.assign(produtoPorId(Number(id)), campos);
+    pid = Number(id);
+  } else {
+    pid = novoId();
+    dados.produtos.push({id: pid, ...campos});
+  }
+  salvar(); dlgProduto.close(); render();
+  if (aoSalvarProduto){ const cb = aoSalvarProduto; aoSalvarProduto = null; cb(pid); }
+  return false;
+}
+function excluirProduto(){
+  const pid = Number(document.getElementById('prodId').value);
+  const p = produtoPorId(pid);
+  const nMovs = entradasDe(pid).length + saidasDe(pid).length;
+  const msg = nMovs
+    ? `Excluir "${p.nome}" apaga também os ${nMovs} movimentos dele (entradas e saídas). Tem certeza?`
+    : `Excluir o produto "${p.nome}"?`;
+  if (!confirm(msg)) return;
+  dados.produtos = dados.produtos.filter(x => x.id !== pid);
+  dados.entradas = dados.entradas.filter(x => x.produtoId !== pid);
+  dados.saidas = dados.saidas.filter(x => x.produtoId !== pid);
+  linhasAbertas.delete(pid);
+  salvar(); dlgProduto.close(); render();
+}
+
+/* ---------- excluir movimento ---------- */
+function excluirMovimento(tipo, id){
+  if (!confirm('Excluir este movimento? O saldo será recalculado.')) return;
+  if (tipo === 'entrada') dados.entradas = dados.entradas.filter(e => e.id !== id);
+  else dados.saidas = dados.saidas.filter(s => s.id !== id);
+  salvar(); render();
+}
+
+/* ---------- backup / restauração / CSV ---------- */
+function baixarArquivo(nome, conteudo, tipo){
+  const blob = new Blob([conteudo], {type: tipo});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = nome;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+}
+
+function fazerBackup(){
+  dados.ultimoBackup = hojeISO();
+  salvar();
+  baixarArquivo(`backup-estoque-${hojeISO()}.json`, JSON.stringify(dados, null, 2), 'application/json');
+  render();
+  alert('Backup baixado! O arquivo está na pasta Downloads.\nGuarde uma cópia em local seguro (pendrive ou e-mail).');
+}
+
+function restaurarBackup(input){
+  const arquivo = input.files[0];
+  input.value = '';
+  if (!arquivo) return;
+  const leitor = new FileReader();
+  leitor.onload = () => {
+    try{
+      const novo = JSON.parse(leitor.result);
+      if (!novo || !Array.isArray(novo.produtos) || !Array.isArray(novo.entradas) || !Array.isArray(novo.saidas)){
+        alert('Este arquivo não parece ser um backup do Estoque da Cozinha.');
+        return;
+      }
+      if (!confirm(`Restaurar backup com ${novo.produtos.length} produtos, ${novo.entradas.length} entradas e ${novo.saidas.length} saídas?\n\nIsso SUBSTITUI os dados atuais.`)) return;
+      dados = novo;
+      salvar(); render();
+      alert('Backup restaurado com sucesso!');
+    }catch(e){
+      alert('Não consegui ler o arquivo. Confira se é o backup correto (.json).');
+    }
+  };
+  leitor.readAsText(arquivo);
+}
+
+function exportarCSV(){
+  const sep = ';';
+  const num = n => (n === null || n === undefined || isNaN(n)) ? '' : String(Math.round(n * 100) / 100).replace('.', ',');
+  const linhas = [
+    ['Produto', 'Categoria', 'Unidade', 'Saldo atual', 'Consumo por dia', 'Consumo por semana',
+     'Consumo ultimos 30 dias', 'Estoque minimo 1 dia', 'Estoque medio', 'Proxima validade', 'Situacao', 'Sugestao de compra'].join(sep)
+  ];
+  for (const p of dados.produtos.slice().sort((a, b) => a.categoria.localeCompare(b.categoria) || a.nome.localeCompare(b.nome, 'pt-BR'))){
+    const s = estatisticasDe(p.id);
+    linhas.push([
+      `"${p.nome}"`, `"${p.categoria}"`, p.unidade, num(s.saldo), num(s.consumoDia), num(s.consumoSemana),
+      num(s.consumo30), num(s.minimo1dia), num(s.estoqueMedio),
+      s.proximaValidade ? fmtData(s.proximaValidade) : '',
+      s.etiquetas.map(e => e.texto).join(' + '),
+      num(s.sugestaoCompra)
+    ].join(sep));
+  }
+  baixarArquivo(`estoque-${hojeISO()}.csv`, '\uFEFF' + linhas.join('\r\n'), 'text/csv;charset=utf-8');
+}
+
+function renderBackupInfo(){
+  const aviso = document.getElementById('avisoBackup');
+  const info = document.getElementById('infoUltimoBackup');
+  const temMovimentoNovo = dados.saidas.length > 0 || dados.entradas.some(e => e.data > '2026-07-16');
+  if (dados.ultimoBackup){
+    const dias = difDias(dados.ultimoBackup, hojeISO());
+    info.textContent = `Último backup: ${fmtData(dados.ultimoBackup)}.`;
+    if (dias > 7 && temMovimentoNovo){
+      document.getElementById('avisoBackupTexto').textContent = `O último foi há ${dias} dias.`;
+      aviso.hidden = false;
+    } else aviso.hidden = true;
+  } else {
+    info.textContent = 'Nenhum backup feito ainda.';
+    if (temMovimentoNovo){
+      document.getElementById('avisoBackupTexto').textContent = 'Você ainda não fez nenhum backup.';
+      aviso.hidden = false;
+    } else aviso.hidden = true;
+  }
+}
+
+/* ---------- início ---------- */
+carregar();
+render();
+
+/* Quando aberto pela internet (GitHub Pages), guarda uma cópia no navegador
+   para funcionar sem internet nas próximas vezes. No arquivo local, não faz nada. */
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  navigator.serviceWorker.register('./sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>
