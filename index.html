@@ -109,12 +109,12 @@
   }
   .painel h2 small{font-family:"Segoe UI",system-ui,sans-serif; color:var(--muted); font-weight:400; font-size:.85rem; margin-left:8px}
   .rolagem{overflow-x:auto}
-  table{border-collapse:collapse; width:100%; min-width:960px}
+  table{border-collapse:collapse; width:100%; min-width:840px}
   th{
-    text-align:left; font-size:.82rem; text-transform:uppercase; letter-spacing:.4px;
-    color:var(--muted); padding:8px 12px; border-bottom:2px solid var(--linha); white-space:nowrap;
+    text-align:left; font-size:.78rem; text-transform:uppercase; letter-spacing:.3px;
+    color:var(--muted); padding:8px 8px; border-bottom:2px solid var(--linha); vertical-align:bottom;
   }
-  td{padding:10px 12px; border-bottom:1px solid var(--linha); font-variant-numeric:tabular-nums; vertical-align:middle}
+  td{padding:9px 8px; border-bottom:1px solid var(--linha); font-variant-numeric:tabular-nums; vertical-align:middle}
   th.num, td.num{text-align:right}
   tr.categoria-cab td{
     background:var(--verde-suave); font-weight:700; font-size:.82rem;
@@ -208,6 +208,12 @@
     body.imprimir-lista #listaCompras{border:none; box-shadow:none}
   }
 
+  /* Notebooks menores (ou Windows com zoom 125%): encolhe um pouco pra caber tudo */
+  @media (max-width:1220px){
+    html{font-size:15px}
+    main{padding:16px 14px 32px}
+    th{font-size:.74rem}
+  }
   @media (max-width:720px){
     html{font-size:16px}
     .detalhe-grade{grid-template-columns:1fr}
@@ -275,12 +281,12 @@
             <th></th>
             <th>Produto</th>
             <th class="num">Saldo</th>
-            <th class="num">Consumo/dia</th>
-            <th class="num">Consumo/semana</th>
-            <th class="num">Últimos 30 dias</th>
-            <th class="num">Mínimo p/ 1 dia</th>
-            <th class="num">Estoque médio</th>
-            <th>Próx. validade</th>
+            <th class="num">Consumo<br>por dia</th>
+            <th class="num">Consumo<br>semana</th>
+            <th class="num">Últimos<br>30 dias</th>
+            <th class="num">Mínimo<br>p/ 1 dia</th>
+            <th class="num">Estoque<br>médio</th>
+            <th>Próx.<br>validade</th>
             <th>Situação</th>
           </tr>
         </thead>
@@ -368,6 +374,10 @@
       <select id="saiProduto" required onchange="saidaProdutoMudou()"></select>
     </div>
     <div class="saldo-dica" id="saiSaldoDica" hidden></div>
+    <div class="campo" id="campoLote" hidden>
+      <label for="saiLote">Baixar de qual lote? <span class="dica">(tem mais de um fornecedor/validade em estoque)</span></label>
+      <select id="saiLote"></select>
+    </div>
     <div class="duas-colunas">
       <div class="campo">
         <label for="saiData">Dia da saída</label>
@@ -528,16 +538,27 @@ function saldoDe(pid){
   return e - s;
 }
 
-/* Lotes: cada entrada é um lote. As saídas consomem primeiro o lote que
-   vence primeiro; lote sem validade entra na fila pela data de chegada
-   (estoque antigo sem data marcada sai antes de lote que vence longe). */
+/* Lotes: cada entrada é um lote. Saída com lote escolhido desconta daquele
+   lote; as demais consomem primeiro o lote que vence primeiro (lote sem
+   validade entra na fila pela data de chegada). Se a saída direcionada
+   passar do que o lote tem, o excedente segue a fila normal. */
 function lotesDe(pid){
   const chave = e => e.validade || e.data;
   const lotes = entradasDe(pid)
     .slice()
     .sort((a, b) => chave(a).localeCompare(chave(b)) || a.data.localeCompare(b.data))
     .map(e => ({...e, restante: e.qtd}));
-  let aBaixar = saidasDe(pid).reduce((t, s) => t + s.qtd, 0);
+  let aBaixar = 0;
+  for (const s of saidasDe(pid)){
+    const lote = s.loteId ? lotes.find(l => l.id === s.loteId) : null;
+    if (lote){
+      const usa = Math.min(lote.restante, s.qtd);
+      lote.restante -= usa;
+      aBaixar += s.qtd - usa;
+    } else {
+      aBaixar += s.qtd;
+    }
+  }
   for (const lote of lotes){
     if (aBaixar <= 0) break;
     const usa = Math.min(lote.restante, aBaixar);
@@ -717,14 +738,24 @@ function renderDetalhe(s){
   const movsHtml = movs.length ? `
     <table class="subtabela">
       <thead><tr><th>Data</th><th>Tipo</th><th class="num">Qtd.</th><th>Detalhe</th><th></th></tr></thead>
-      <tbody>${movs.map(m => `
+      <tbody>${movs.map(m => {
+        let detalheTxt;
+        if (m.tipo === 'entrada'){
+          detalheTxt = m.fornecedor || '';
+        } else {
+          const loteOrigem = m.loteId ? dados.entradas.find(e => e.id === m.loteId) : null;
+          const infoLote = loteOrigem ? 'lote ' + (loteOrigem.fornecedor || (loteOrigem.validade ? 'val. ' + fmtData(loteOrigem.validade) : fmtData(loteOrigem.data))) : '';
+          detalheTxt = [m.obs, infoLote].filter(Boolean).join(' · ');
+        }
+        return `
         <tr>
           <td>${fmtData(m.data)}</td>
           <td class="${m.tipo === 'entrada' ? 'mov-entrada' : 'mov-saida'}">${m.tipo === 'entrada' ? '➕ Entrada' : '➖ Saída'}</td>
           <td class="num">${fmt(m.qtd)}</td>
-          <td>${esc(m.tipo === 'entrada' ? (m.fornecedor || '') : (m.obs || '')) || '—'}</td>
+          <td>${esc(detalheTxt) || '—'}</td>
           <td><button class="btn-excluir-mov" onclick="event.stopPropagation(); excluirMovimento('${m.tipo}', ${m.id})">excluir</button></td>
-        </tr>`).join('')}</tbody>
+        </tr>`;
+      }).join('')}</tbody>
     </table>` : '<p class="vazio-sub">Nenhum movimento ainda.</p>';
 
   return `
@@ -846,14 +877,35 @@ function saidaProdutoMudou(){
     return;
   }
   const p = produtoPorId(Number(sel.value));
+  const campoLote = document.getElementById('campoLote');
+  const selLote = document.getElementById('saiLote');
   if (p){
     const saldo = saldoDe(p.id);
     dica.hidden = false;
     dica.className = 'saldo-dica' + (saldo <= 0 ? ' negativa' : '');
     dica.innerHTML = `Saldo atual de <strong>${esc(p.nome)}</strong>: <strong>${fmt(saldo)} ${esc(p.unidade)}</strong>`;
     document.getElementById('saiUnidade').textContent = `(em ${p.unidade})`;
+    // se houver mais de um lote em estoque, deixa escolher de qual baixar
+    const lotes = lotesDe(p.id);
+    if (lotes.length > 1){
+      campoLote.hidden = false;
+      selLote.innerHTML = '<option value="">Automático — baixa do que vence primeiro</option>' +
+        lotes.map(l => {
+          const rotulo = [
+            l.validade ? 'Val. ' + fmtData(l.validade) : 'Chegou ' + fmtData(l.data),
+            l.fornecedor || null,
+            `resta ${fmt(l.restante)} ${p.unidade}`
+          ].filter(Boolean).join(' · ');
+          return `<option value="${l.id}">${esc(rotulo)}</option>`;
+        }).join('');
+    } else {
+      campoLote.hidden = true;
+      selLote.innerHTML = '';
+    }
   } else {
     dica.hidden = true;
+    campoLote.hidden = true;
+    selLote.innerHTML = '';
     document.getElementById('saiUnidade').textContent = '';
   }
 }
@@ -868,10 +920,19 @@ function salvarSaida(ev){
     const p = produtoPorId(pid);
     if (!confirm(`Atenção: o saldo de ${p.nome} é ${fmt(saldo)} ${p.unidade} e você está dando baixa de ${fmt(qtd)}.\nO saldo vai ficar negativo. Salvar mesmo assim?`)) return false;
   }
+  const loteId = Number(document.getElementById('saiLote').value) || null;
+  if (loteId){
+    const lote = lotesDe(pid).find(l => l.id === loteId);
+    if (lote && qtd > lote.restante + 0.000001){
+      const p = produtoPorId(pid);
+      if (!confirm(`Esse lote tem só ${fmt(lote.restante)} ${p.unidade}.\nO que passar disso será baixado dos outros lotes. Continuar?`)) return false;
+    }
+  }
   dados.saidas.push({
     id: novoId(), produtoId: pid,
     data: document.getElementById('saiData').value || hojeISO(),
     qtd,
+    loteId,
     obs: document.getElementById('saiObs').value.trim()
   });
   salvar(); dlgSaida.close(); render();
