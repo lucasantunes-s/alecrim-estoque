@@ -109,7 +109,7 @@
   }
   .painel h2 small{font-family:"Segoe UI",system-ui,sans-serif; color:var(--muted); font-weight:400; font-size:.85rem; margin-left:8px}
   .rolagem{overflow-x:auto}
-  table{border-collapse:collapse; width:100%; min-width:840px}
+  table{border-collapse:collapse; width:100%; min-width:960px}
   th{
     text-align:left; font-size:.78rem; text-transform:uppercase; letter-spacing:.3px;
     color:var(--muted); padding:8px 8px; border-bottom:2px solid var(--linha); vertical-align:bottom;
@@ -142,7 +142,7 @@
 
   /* Detalhe expandido */
   tr.detalhe > td{background:#FBFAF6; padding:16px 20px 20px}
-  .detalhe-grade{display:grid; grid-template-columns:1fr 1fr; gap:20px}
+  .detalhe-grade{display:grid; grid-template-columns:1fr 1.35fr; gap:20px}
   .detalhe-grade h3{
     font-size:.78rem; text-transform:uppercase; letter-spacing:1.5px;
     margin-bottom:8px; color:var(--flor);
@@ -152,6 +152,17 @@
   .subtabela td{padding:6px 8px; font-size:.92rem; border-bottom:1px solid #ECEAE0}
   .mov-entrada{color:var(--verde-escuro); font-weight:600}
   .mov-saida{color:var(--vermelho); font-weight:600}
+  .rolagem-movs{max-height:340px; overflow-y:auto; border:1px solid #ECEAE0; border-radius:8px; background:#fff}
+  .rolagem-movs thead th{position:sticky; top:0; background:#F4F2EA; z-index:1}
+  .mov-custo{color:var(--muted); font-size:.85rem; white-space:nowrap}
+
+  /* Resumo do produto (dentro do detalhe) */
+  .resumo-produto{display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:8px 10px; margin-bottom:16px}
+  .resumo-produto div{background:#fff; border:1px solid var(--linha); border-radius:9px; padding:7px 10px}
+  .resumo-produto .r-rotulo{display:block; font-size:.7rem; text-transform:uppercase; letter-spacing:.8px; color:var(--muted); line-height:1.25; margin-bottom:2px}
+  .resumo-produto .r-valor{font-weight:700; font-size:1rem; font-variant-numeric:tabular-nums; white-space:nowrap}
+  .resumo-produto .r-valor small{font-weight:400; color:var(--muted); font-size:.8rem}
+  .resumo-produto .r-dinheiro .r-valor{color:var(--verde-escuro)}
   .detalhe-acoes{margin-top:14px; display:flex; gap:10px; flex-wrap:wrap}
   .btn-excluir-mov{border:none; background:none; color:var(--vermelho); cursor:pointer; font-size:.85rem; text-decoration:underline}
   .vazio-sub{color:var(--muted); font-size:.92rem}
@@ -212,7 +223,9 @@
   @media (max-width:1220px){
     html{font-size:15px}
     main{padding:16px 14px 32px}
-    th{font-size:.74rem}
+    th{font-size:.72rem; padding:8px 5px}
+    td{padding:9px 5px}
+    .badge{padding:3px 7px}
   }
   @media (max-width:720px){
     html{font-size:16px}
@@ -284,8 +297,11 @@
             <th class="num">Consumo<br>por dia</th>
             <th class="num">Consumo<br>semana</th>
             <th class="num">Últimos<br>30 dias</th>
+            <th class="num">Consumo<br>acumulado</th>
             <th class="num">Mínimo<br>p/ 1 dia</th>
             <th class="num">Estoque<br>médio</th>
+            <th class="num">Preço<br>unit. R$</th>
+            <th class="num">Gasto no<br>consumo R$</th>
             <th>Próx.<br>validade</th>
             <th>Situação</th>
           </tr>
@@ -302,7 +318,7 @@
     <div class="rolagem" id="comprasWrap">
       <table>
         <thead>
-          <tr><th>Produto</th><th class="num">Saldo atual</th><th class="num">Mínimo p/ 1 dia</th><th class="num">Sugestão de compra</th></tr>
+          <tr><th>Produto</th><th class="num">Saldo atual</th><th class="num">Mínimo p/ 1 dia</th><th class="num">Sugestão de compra</th><th class="num">Custo estimado</th></tr>
         </thead>
         <tbody id="corpoCompras"></tbody>
       </table>
@@ -341,12 +357,23 @@
       </div>
       <div class="campo">
         <label for="entQtd">Quantidade <span class="dica" id="entUnidade"></span></label>
-        <input type="text" id="entQtd" inputmode="decimal" placeholder="ex.: 5 ou 2,5" required>
+        <input type="text" id="entQtd" inputmode="decimal" placeholder="ex.: 5 ou 2,5" required oninput="entradaTotalMudou()">
       </div>
     </div>
     <div class="campo">
       <label for="entFornecedor">Fornecedor <span class="dica">(opcional)</span></label>
       <input type="text" id="entFornecedor" placeholder="ex.: Atacadão">
+    </div>
+    <div class="duas-colunas">
+      <div class="campo">
+        <label for="entPreco">💲 Preço pago <span class="dica" id="entPrecoUnidade">(R$ por unidade, opcional)</span></label>
+        <input type="text" id="entPreco" inputmode="decimal" placeholder="ex.: 5,50" oninput="entradaTotalMudou()">
+        <span class="dica" id="entTotal"></span>
+      </div>
+      <div class="campo" id="campoTemperatura" hidden>
+        <label for="entTemperatura">🌡️ Temperatura na chegada <span class="dica">(°C, opcional)</span></label>
+        <input type="text" id="entTemperatura" inputmode="decimal" placeholder="ex.: 4 ou -18">
+      </div>
     </div>
     <div class="duas-colunas">
       <div class="campo">
@@ -424,12 +451,18 @@
           <option value="pct">pct (pacote)</option>
           <option value="cx">cx (caixa)</option>
           <option value="dz">dz (dúzia)</option>
+          <option value="rolo">rolo</option>
+          <option value="par">par</option>
         </select>
       </div>
     </div>
     <div class="campo">
       <label for="prodMinimo">Estoque mínimo <span class="dica">(opcional — se deixar vazio, o sistema calcula sozinho pelo consumo de 1 dia)</span></label>
       <input type="text" id="prodMinimo" inputmode="decimal" placeholder="automático">
+    </div>
+    <div class="campo">
+      <label for="prodPreco">💲 Preço de referência <span class="dica" id="prodPrecoUnidade">(R$ por unidade, opcional — usado quando a entrada não tem preço)</span></label>
+      <input type="text" id="prodPreco" inputmode="decimal" placeholder="ex.: 5,50">
     </div>
     <div class="dlg-rodape" style="padding:0; justify-content:space-between">
       <button type="button" class="btn btn-claro btn-mini" id="btnExcluirProduto" hidden onclick="excluirProduto()" style="color:var(--vermelho)">Excluir produto</button>
@@ -449,9 +482,10 @@
    ===================================================================== */
 
 const CHAVE = 'estoque-cozinha-v1';
-const CATEGORIAS = ['Perecíveis', 'Não perecíveis', 'Embalagens', 'Limpeza', 'Materiais de consumo'];
+const CATEGORIAS = ['Perecíveis', 'Não perecíveis', 'Embalagens', 'Limpeza', 'Materiais de consumo', 'Uniformes e EPIs'];
 const DIAS_COBERTURA = 7;   // a lista de compras sugere quantidade para cobrir 7 dias
 const JANELA_DIAS = 30;     // janela usada para consumo médio e estoque médio
+const N_COLUNAS = 13;       // colunas da tabela principal (para o colspan das linhas de categoria/detalhe)
 
 let dados = null;
 let filtroCategoria = 'Todas';
@@ -481,16 +515,56 @@ function lerNumero(texto){
 function esc(s){ return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
 /* ---------- armazenamento ---------- */
-function salvar(){ localStorage.setItem(CHAVE, JSON.stringify(dados)); }
+const nfMoeda = new Intl.NumberFormat('pt-BR', {style: 'currency', currency: 'BRL'});
+function fmtR$(n){ return (n === null || n === undefined || isNaN(n)) ? '—' : nfMoeda.format(n); }
+
+let ultimoSalvo = null; // texto que ESTA janela gravou por último (para detectar outra janela gravando)
+function salvar(){
+  dados.revisao = (dados.revisao || 0) + 1;
+  const texto = JSON.stringify(dados);
+  try{
+    localStorage.setItem(CHAVE, texto);
+    ultimoSalvo = texto;
+  }catch(e){
+    alert('NÃO CONSEGUI SALVAR! O navegador recusou gravar os dados (' + (e && e.name ? e.name : 'erro') + ').\n' +
+          'Faça um backup agora e avise o Lucas.');
+  }
+}
 
 function carregar(){
-  try{
-    const bruto = localStorage.getItem(CHAVE);
-    if (bruto) { dados = JSON.parse(bruto); return; }
-  }catch(e){ /* dados corrompidos: recomeça com o seed */ }
+  const bruto = localStorage.getItem(CHAVE);
+  if (bruto){
+    try{
+      const lido = JSON.parse(bruto);
+      if (lido && Array.isArray(lido.produtos)){ dados = lido; ultimoSalvo = bruto; return; }
+    }catch(e){ /* cai no tratamento abaixo */ }
+    // Dados ilegíveis: NUNCA sobrescrever. Guarda uma cópia e avisa.
+    localStorage.setItem(CHAVE + '-corrompido-' + Date.now(), bruto);
+    alert('Os dados salvos no navegador não puderam ser lidos. Foi guardada uma cópia de segurança.\nRestaure o seu último backup e avise o Lucas.');
+    dados = {versao: 1, proximoId: 100, ultimoBackup: null, produtos: [], entradas: [], saidas: []};
+    return;
+  }
   dados = dadosIniciais();
   salvar();
 }
+
+/* Se o sistema estiver aberto em duas janelas/abas ao mesmo tempo, uma janela
+   antiga poderia sobrescrever o que a outra acabou de salvar (por exemplo,
+   desfazendo uma exclusão). Por isso, antes de mexer nos dados e sempre que a
+   janela volta ao foco, relemos o que está gravado. */
+function recarregarSeMudou(){
+  const bruto = localStorage.getItem(CHAVE);
+  if (bruto && bruto !== ultimoSalvo){
+    try{
+      const lido = JSON.parse(bruto);
+      if (lido && Array.isArray(lido.produtos)){ dados = lido; ultimoSalvo = bruto; return true; }
+    }catch(e){ /* ignora: mantém o que está em memória */ }
+  }
+  return false;
+}
+window.addEventListener('storage', ev => { if (ev.key === CHAVE && recarregarSeMudou()) render(); });
+window.addEventListener('focus', () => { if (recarregarSeMudou()) render(); });
+document.addEventListener('visibilitychange', () => { if (!document.hidden && recarregarSeMudou()) render(); });
 
 function novoId(){ dados.proximoId = (dados.proximoId || 1) + 1; return dados.proximoId; }
 
@@ -542,30 +616,70 @@ function saldoDe(pid){
    lote; as demais consomem primeiro o lote que vence primeiro (lote sem
    validade entra na fila pela data de chegada). Se a saída direcionada
    passar do que o lote tem, o excedente segue a fila normal. */
-function lotesDe(pid){
+function temNumero(v){ return v !== null && v !== undefined && v !== '' && !isNaN(v); }
+
+/* Preço padrão do produto: o preço da entrada mais recente que tinha preço;
+   se nenhuma tiver, o preço de referência do cadastro. Usado nos lotes sem preço. */
+function precoPadraoDe(pid){
+  const comPreco = entradasDe(pid).filter(e => temNumero(e.precoUnit) && e.precoUnit > 0)
+    .sort((a, b) => b.data.localeCompare(a.data) || b.id - a.id);
+  if (comPreco.length) return comPreco[0].precoUnit;
+  const p = produtoPorId(pid);
+  return (p && temNumero(p.precoRef) && p.precoRef > 0) ? p.precoRef : null;
+}
+
+/* Aloca as saídas nos lotes e calcula o custo de cada saída.
+   Devolve {lotes (todos, com restante e precoUnit efetivo), custoDe: Map(saidaId → custo|null)}.
+   O custo de uma saída é a soma de (quantidade tirada do lote × preço do lote). */
+function alocarLotes(pid){
   const chave = e => e.validade || e.data;
+  const padrao = precoPadraoDe(pid);
   const lotes = entradasDe(pid)
     .slice()
     .sort((a, b) => chave(a).localeCompare(chave(b)) || a.data.localeCompare(b.data))
-    .map(e => ({...e, restante: e.qtd}));
-  let aBaixar = 0;
-  for (const s of saidasDe(pid)){
+    .map(e => ({...e, restante: e.qtd, precoEfetivo: (temNumero(e.precoUnit) && e.precoUnit > 0) ? e.precoUnit : padrao}));
+  const custoDe = new Map();
+  const semPreco = new Set(); // saídas com alguma parte sem preço conhecido
+  const saidas = saidasDe(pid).slice().sort((a, b) => a.data.localeCompare(b.data) || a.id - b.id);
+  const tira = (lote, qtd, s) => {
+    lote.restante -= qtd;
+    if (lote.precoEfetivo !== null) custoDe.set(s.id, (custoDe.get(s.id) || 0) + qtd * lote.precoEfetivo);
+    else semPreco.add(s.id);
+  };
+  // 1) saídas direcionadas a um lote (como antes: primeiro elas, depois a fila)
+  const pendentes = []; // [saida, qtd que ainda falta baixar]
+  for (const s of saidas){
     const lote = s.loteId ? lotes.find(l => l.id === s.loteId) : null;
+    let falta = s.qtd;
     if (lote){
       const usa = Math.min(lote.restante, s.qtd);
-      lote.restante -= usa;
-      aBaixar += s.qtd - usa;
-    } else {
-      aBaixar += s.qtd;
+      if (usa > 0) tira(lote, usa, s);
+      falta -= usa;
+    }
+    if (falta > 0) pendentes.push([s, falta]);
+  }
+  // 2) o restante segue a fila de quem vence primeiro
+  let i = 0;
+  for (const [s, qtdPend] of pendentes){
+    let falta = qtdPend;
+    while (falta > 0.000001 && i < lotes.length){
+      if (lotes[i].restante <= 0.000001){ i++; continue; }
+      const usa = Math.min(lotes[i].restante, falta);
+      tira(lotes[i], usa, s);
+      falta -= usa;
+    }
+    if (falta > 0.000001){ // saldo negativo: sem lote para cobrir — usa o preço padrão
+      if (padrao !== null) custoDe.set(s.id, (custoDe.get(s.id) || 0) + falta * padrao);
+      else semPreco.add(s.id);
     }
   }
-  for (const lote of lotes){
-    if (aBaixar <= 0) break;
-    const usa = Math.min(lote.restante, aBaixar);
-    lote.restante -= usa;
-    aBaixar -= usa;
-  }
-  return lotes.filter(l => l.restante > 0.000001);
+  for (const s of saidas) if (!custoDe.has(s.id)) custoDe.set(s.id, null);
+  for (const id of semPreco) custoDe.set(id, null);
+  return {lotes, custoDe, precoPadrao: padrao};
+}
+
+function lotesDe(pid){
+  return alocarLotes(pid).lotes.filter(l => l.restante > 0.000001);
 }
 
 function estatisticasDe(pid){
@@ -610,8 +724,30 @@ function estatisticasDe(pid){
     estoqueMedio = soma / n;
   }
 
+  // consumo acumulado (tudo desde o início) e custos
+  const consumoTotal = saidas.reduce((t, s) => t + s.qtd, 0);
+  const primeiraSaida = saidas.length ? saidas.reduce((min, s) => s.data < min ? s.data : min, saidas[0].data) : null;
+  const aloc = alocarLotes(pid);
+  let custoTotal = 0, custo30 = 0, custoIncompleto = false, temCusto = false;
+  for (const s of saidas){
+    const c = aloc.custoDe.get(s.id);
+    if (c === null || c === undefined){ custoIncompleto = true; continue; }
+    temCusto = true;
+    custoTotal += c;
+    if (s.data >= inicioJanela && s.data <= hoje) custo30 += c;
+  }
+  if (!temCusto){ custoTotal = null; custo30 = null; }
+  const lotes = aloc.lotes.filter(l => l.restante > 0.000001);
+  let valorEstoque = 0, valorIncompleto = false, temValor = false;
+  for (const l of lotes){
+    if (l.precoEfetivo === null){ valorIncompleto = true; continue; }
+    temValor = true;
+    valorEstoque += l.restante * l.precoEfetivo;
+  }
+  if (!temValor) valorEstoque = null;
+  const precoUnit = aloc.precoPadrao;
+
   // validade
-  const lotes = lotesDe(pid);
   const proximaValidade = lotes.filter(l => l.validade).map(l => l.validade).sort()[0] || null;
   const temVencido = lotes.some(l => l.validade && l.validade < hoje);
   const temVencendo = lotes.some(l => l.validade && l.validade >= hoje && difDias(hoje, l.validade) <= 7);
@@ -629,9 +765,12 @@ function estatisticasDe(pid){
   if (!temVencido && temVencendo) etiquetas.push({classe: 'b-vencendo', texto: 'VENCENDO'});
   if (!etiquetas.length) etiquetas.push({classe: 'b-ok', texto: 'OK'});
 
+  const custoSugestao = (sugestaoCompra !== null && precoUnit !== null) ? sugestaoCompra * precoUnit : null;
+
   return {produto, saldo, consumoDia, consumoSemana: consumoDia !== null ? consumoDia * 7 : null,
-          consumo30, minimo1dia, estoqueMedio, proximaValidade, temVencido, temVencendo,
-          precisaComprar, sugestaoCompra, etiquetas, lotes};
+          consumo30, consumoTotal, primeiraSaida, minimo1dia, estoqueMedio, proximaValidade, temVencido, temVencendo,
+          precisaComprar, sugestaoCompra, custoSugestao, etiquetas, lotes,
+          precoUnit, custoTotal, custo30, custoIncompleto, valorEstoque, valorIncompleto, custoDe: aloc.custoDe};
 }
 
 /* ---------- interface ---------- */
@@ -692,7 +831,7 @@ function renderTabela(stats){
       .sort((a, b) => a.produto.nome.localeCompare(b.produto.nome, 'pt-BR'));
     if (!doGrupo.length) continue;
 
-    html += `<tr class="categoria-cab"><td colspan="10">${cat}</td></tr>`;
+    html += `<tr class="categoria-cab"><td colspan="${N_COLUNAS}">${cat}</td></tr>`;
     for (const s of doGrupo){
       total++;
       const aberta = linhasAbertas.has(s.produto.id);
@@ -704,8 +843,11 @@ function renderTabela(stats){
           <td class="num">${s.consumoDia === null ? '<span class="traco">—</span>' : fmt(s.consumoDia)}</td>
           <td class="num">${s.consumoSemana === null ? '<span class="traco">—</span>' : fmt(s.consumoSemana)}</td>
           <td class="num">${s.consumoDia === null ? '<span class="traco">—</span>' : fmt(s.consumo30)}</td>
+          <td class="num">${s.consumoDia === null ? '<span class="traco">—</span>' : fmt(s.consumoTotal)}</td>
           <td class="num">${s.minimo1dia === null ? '<span class="traco">—</span>' : fmt(s.minimo1dia)}</td>
           <td class="num">${s.estoqueMedio === null ? '<span class="traco">—</span>' : fmt(s.estoqueMedio)}</td>
+          <td class="num">${s.precoUnit === null ? '<span class="traco">—</span>' : fmt(s.precoUnit)}</td>
+          <td class="num">${s.custoTotal === null ? '<span class="traco">—</span>' : fmt(s.custoTotal) + (s.custoIncompleto ? '<span class="traco" title="Parte das saídas não tem preço conhecido">*</span>' : '')}</td>
           <td>${fmtData(s.proximaValidade)}</td>
           <td>${s.etiquetas.map(e => `<span class="badge ${e.classe}">${e.texto}</span>`).join('')}</td>
         </tr>`;
@@ -719,50 +861,87 @@ function renderTabela(stats){
 
 function renderDetalhe(s){
   const hoje = hojeISO();
+  const un = esc(s.produto.unidade);
+  const perecivel = s.produto.categoria === 'Perecíveis';
+  const mostraTemp = perecivel || s.lotes.some(l => temNumero(l.temperatura));
+  const nEntradas = entradasDe(s.produto.id).length;
+  const nSaidas = saidasDe(s.produto.id).length;
+  const val = (v, sufixo) => v === null || v === undefined ? '<span class="traco">—</span>' : fmt(v) + (sufixo ? ` <small>${sufixo}</small>` : '');
+  const din = (v, incompleto) => v === null || v === undefined ? '<span class="traco">—</span>' : fmtR$(v) + (incompleto ? '<small title="Parte sem preço conhecido">*</small>' : '');
+
+  // resumo do consumo e dos valores
+  const resumoHtml = `
+    <div class="resumo-produto">
+      <div><span class="r-rotulo">Consumo por dia (média)</span><span class="r-valor">${val(s.consumoDia, un)}</span></div>
+      <div><span class="r-rotulo">Consumo por semana</span><span class="r-valor">${val(s.consumoSemana, un)}</span></div>
+      <div><span class="r-rotulo">Últimos 30 dias</span><span class="r-valor">${val(s.consumoDia === null ? null : s.consumo30, un)}</span></div>
+      <div><span class="r-rotulo">Consumo acumulado${s.primeiraSaida ? ' desde ' + fmtData(s.primeiraSaida) : ''}</span><span class="r-valor">${val(s.consumoDia === null ? null : s.consumoTotal, un)}</span></div>
+      <div><span class="r-rotulo">Estoque médio (30 dias)</span><span class="r-valor">${val(s.estoqueMedio, un)}</span></div>
+      <div class="r-dinheiro"><span class="r-rotulo">Preço unitário atual</span><span class="r-valor">${s.precoUnit === null ? '<span class="traco">—</span>' : fmtR$(s.precoUnit) + ` <small>/ ${un}</small>`}</span></div>
+      <div class="r-dinheiro"><span class="r-rotulo">Valor em estoque</span><span class="r-valor">${din(s.valorEstoque, s.valorIncompleto)}</span></div>
+      <div class="r-dinheiro"><span class="r-rotulo">Gasto no consumo · 30 dias</span><span class="r-valor">${din(s.custo30, s.custoIncompleto)}</span></div>
+      <div class="r-dinheiro"><span class="r-rotulo">Gasto no consumo · acumulado</span><span class="r-valor">${din(s.custoTotal, s.custoIncompleto)}</span></div>
+    </div>`;
+
   const lotesHtml = s.lotes.length ? `
     <table class="subtabela">
-      <thead><tr><th>Validade</th><th class="num">Restante</th><th>Chegou em</th><th>Fornecedor</th></tr></thead>
+      <thead><tr><th>Validade</th><th>Fabricação</th><th class="num">Restante</th><th>Chegou em</th><th>Fornecedor</th><th class="num">Preço unit.</th>${mostraTemp ? '<th class="num">Temp.</th>' : ''}</tr></thead>
       <tbody>${s.lotes.map(l => {
         let cor = '';
         if (l.validade && l.validade < hoje) cor = 'style="color:var(--vermelho); font-weight:700"';
         else if (l.validade && difDias(hoje, l.validade) <= 7) cor = 'style="color:var(--ambar); font-weight:700"';
-        return `<tr><td ${cor}>${fmtData(l.validade)}</td><td class="num">${fmt(l.restante)} ${esc(s.produto.unidade)}</td><td>${fmtData(l.data)}</td><td>${esc(l.fornecedor) || '—'}</td></tr>`;
+        const preco = temNumero(l.precoUnit) && l.precoUnit > 0 ? fmtR$(l.precoUnit)
+          : (l.precoEfetivo !== null ? `<span class="traco" title="preço de referência (a entrada não tinha preço)">${fmtR$(l.precoEfetivo)}*</span>` : '—');
+        return `<tr><td ${cor}>${fmtData(l.validade)}</td><td>${fmtData(l.fabricacao)}</td><td class="num">${fmt(l.restante)} ${un}</td><td>${fmtData(l.data)}</td><td>${esc(l.fornecedor) || '—'}</td><td class="num">${preco}</td>${mostraTemp ? `<td class="num">${temNumero(l.temperatura) ? fmt(l.temperatura) + ' °C' : '—'}</td>` : ''}</tr>`;
       }).join('')}</tbody>
     </table>` : '<p class="vazio-sub">Sem estoque no momento.</p>';
 
+  // histórico completo (todas as entradas e saídas), da mais recente para a mais antiga
   const movs = [
     ...entradasDe(s.produto.id).map(e => ({tipo: 'entrada', ...e})),
     ...saidasDe(s.produto.id).map(x => ({tipo: 'saida', ...x}))
-  ].sort((a, b) => b.data.localeCompare(a.data) || b.id - a.id).slice(0, 12);
+  ].sort((a, b) => b.data.localeCompare(a.data) || b.id - a.id);
 
   const movsHtml = movs.length ? `
+    <div class="rolagem-movs">
     <table class="subtabela">
-      <thead><tr><th>Data</th><th>Tipo</th><th class="num">Qtd.</th><th>Detalhe</th><th></th></tr></thead>
+      <thead><tr><th>Data</th><th>Tipo</th><th class="num">Qtd.</th><th class="num">R$</th><th>Detalhe</th><th></th></tr></thead>
       <tbody>${movs.map(m => {
-        let detalheTxt;
+        let detalheTxt, dinheiro;
         if (m.tipo === 'entrada'){
-          detalheTxt = m.fornecedor || '';
+          detalheTxt = [
+            m.fornecedor,
+            m.fabricacao ? 'fab. ' + fmtData(m.fabricacao) : '',
+            m.validade ? 'val. ' + fmtData(m.validade) : '',
+            temNumero(m.temperatura) ? fmt(m.temperatura) + ' °C' : ''
+          ].filter(Boolean).join(' · ');
+          dinheiro = temNumero(m.precoUnit) && m.precoUnit > 0 ? fmtR$(m.qtd * m.precoUnit) : '—';
         } else {
           const loteOrigem = m.loteId ? dados.entradas.find(e => e.id === m.loteId) : null;
           const infoLote = loteOrigem ? 'lote ' + (loteOrigem.fornecedor || (loteOrigem.validade ? 'val. ' + fmtData(loteOrigem.validade) : fmtData(loteOrigem.data))) : '';
           detalheTxt = [m.obs, infoLote].filter(Boolean).join(' · ');
+          const c = s.custoDe.get(m.id);
+          dinheiro = (c === null || c === undefined) ? '—' : fmtR$(c);
         }
         return `
         <tr>
           <td>${fmtData(m.data)}</td>
           <td class="${m.tipo === 'entrada' ? 'mov-entrada' : 'mov-saida'}">${m.tipo === 'entrada' ? '➕ Entrada' : '➖ Saída'}</td>
           <td class="num">${fmt(m.qtd)}</td>
+          <td class="num mov-custo">${dinheiro}</td>
           <td>${esc(detalheTxt) || '—'}</td>
           <td><button class="btn-excluir-mov" onclick="event.stopPropagation(); excluirMovimento('${m.tipo}', ${m.id})">excluir</button></td>
         </tr>`;
       }).join('')}</tbody>
-    </table>` : '<p class="vazio-sub">Nenhum movimento ainda.</p>';
+    </table>
+    </div>` : '<p class="vazio-sub">Nenhum movimento ainda.</p>';
 
   return `
-    <tr class="detalhe"><td colspan="10" onclick="event.stopPropagation()">
+    <tr class="detalhe"><td colspan="${N_COLUNAS}" onclick="event.stopPropagation()">
+      ${resumoHtml}
       <div class="detalhe-grade">
         <div><h3>Lotes em estoque (por validade)</h3>${lotesHtml}</div>
-        <div><h3>Últimos movimentos</h3>${movsHtml}</div>
+        <div><h3>Todos os movimentos <span style="letter-spacing:0; text-transform:none; color:var(--muted)">(${nEntradas} entradas · ${nSaidas} saídas)</span></h3>${movsHtml}</div>
       </div>
       <div class="detalhe-acoes">
         <button class="btn btn-claro btn-mini" onclick="abrirEntrada(${s.produto.id})">➕ Entrada deste produto</button>
@@ -787,7 +966,12 @@ function renderCompras(stats){
       <td class="num">${fmt(s.saldo)} ${esc(s.produto.unidade)}</td>
       <td class="num">${s.minimo1dia === null ? '—' : fmt(s.minimo1dia)}</td>
       <td class="num"><strong>${s.sugestaoCompra === null ? '—' : fmt(Math.ceil(s.sugestaoCompra * 100) / 100)} ${esc(s.produto.unidade)}</strong></td>
+      <td class="num">${s.custoSugestao === null ? '—' : fmtR$(s.custoSugestao)}</td>
     </tr>`).join('');
+  const totalCusto = itens.reduce((t, s) => t + (s.custoSugestao || 0), 0);
+  if (itens.length && totalCusto > 0){
+    corpo.innerHTML += `<tr><td colspan="4" style="text-align:right; color:var(--muted)">Total estimado (itens com preço)</td><td class="num"><strong>${fmtR$(totalCusto)}</strong></td></tr>`;
+  }
   document.getElementById('comprasWrap').hidden = !itens.length;
   document.getElementById('comprasVazia').hidden = !!itens.length;
 }
@@ -819,6 +1003,8 @@ function abrirEntrada(pid){
   document.getElementById('entData').value = hojeISO();
   document.getElementById('entQtd').value = '';
   document.getElementById('entFornecedor').value = '';
+  document.getElementById('entPreco').value = '';
+  document.getElementById('entTemperatura').value = '';
   document.getElementById('entFabricacao').value = '';
   document.getElementById('entValidade').value = '';
   entradaProdutoMudou();
@@ -834,6 +1020,20 @@ function entradaProdutoMudou(){
   }
   const p = produtoPorId(Number(sel.value));
   document.getElementById('entUnidade').textContent = p ? `(em ${p.unidade})` : '';
+  document.getElementById('entPrecoUnidade').textContent = p ? `(R$ por ${p.unidade}, opcional)` : '(R$ por unidade, opcional)';
+  // temperatura só faz sentido nos perecíveis (controle de recebimento)
+  document.getElementById('campoTemperatura').hidden = !(p && p.categoria === 'Perecíveis');
+  // sugere o último preço conhecido como dica
+  const precoInput = document.getElementById('entPreco');
+  const padrao = p ? precoPadraoDe(p.id) : null;
+  precoInput.placeholder = padrao !== null ? 'último: ' + fmt(padrao) : 'ex.: 5,50';
+  entradaTotalMudou();
+}
+function entradaTotalMudou(){
+  const qtd = lerNumero(document.getElementById('entQtd').value);
+  const preco = lerNumero(document.getElementById('entPreco').value);
+  const alvo = document.getElementById('entTotal');
+  alvo.textContent = (!isNaN(qtd) && qtd > 0 && !isNaN(preco) && preco > 0) ? `Total desta entrada: ${fmtR$(qtd * preco)}` : '';
 }
 function salvarEntrada(ev){
   ev.preventDefault();
@@ -847,12 +1047,26 @@ function salvarEntrada(ev){
     alert('A validade não pode ser antes da fabricação. Confira as datas.');
     return false;
   }
+  const precoTexto = document.getElementById('entPreco').value.trim();
+  let precoUnit = null;
+  if (precoTexto){
+    precoUnit = lerNumero(precoTexto);
+    if (isNaN(precoUnit) || precoUnit < 0){ alert('Preço inválido. Use números, ex.: 5,50 — ou deixe vazio.'); return false; }
+  }
+  const tempTexto = document.getElementById('entTemperatura').value.trim();
+  let temperatura = null;
+  if (tempTexto && !document.getElementById('campoTemperatura').hidden){
+    temperatura = lerNumero(tempTexto);
+    if (isNaN(temperatura)){ alert('Temperatura inválida. Use números, ex.: 4 ou -18 — ou deixe vazio.'); return false; }
+  }
+  recarregarSeMudou();
   dados.entradas.push({
     id: novoId(), produtoId: pid,
     data: document.getElementById('entData').value || hojeISO(),
     qtd,
     fornecedor: document.getElementById('entFornecedor').value.trim(),
-    fabricacao, validade
+    fabricacao, validade,
+    precoUnit, temperatura
   });
   salvar(); dlgEntrada.close(); render();
   return false;
@@ -928,6 +1142,7 @@ function salvarSaida(ev){
       if (!confirm(`Esse lote tem só ${fmt(lote.restante)} ${p.unidade}.\nO que passar disso será baixado dos outros lotes. Continuar?`)) return false;
     }
   }
+  recarregarSeMudou();
   dados.saidas.push({
     id: novoId(), produtoId: pid,
     data: document.getElementById('saiData').value || hojeISO(),
@@ -950,6 +1165,7 @@ function abrirProduto(pid){
   selCat.value = p ? p.categoria : CATEGORIAS[0];
   document.getElementById('prodUnidade').value = p ? p.unidade : 'kg';
   document.getElementById('prodMinimo').value = (p && p.minimoManual !== null && p.minimoManual !== undefined) ? String(p.minimoManual).replace('.', ',') : '';
+  document.getElementById('prodPreco').value = (p && temNumero(p.precoRef)) ? String(p.precoRef).replace('.', ',') : '';
   document.getElementById('btnExcluirProduto').hidden = !p;
   dlgProduto.showModal();
 }
@@ -966,12 +1182,19 @@ function salvarProduto(ev){
     minimoManual = lerNumero(minTexto);
     if (isNaN(minimoManual) || minimoManual < 0){ alert('Estoque mínimo inválido. Use números ou deixe vazio.'); return false; }
   }
+  const precoTexto = document.getElementById('prodPreco').value.trim();
+  let precoRef = null;
+  if (precoTexto){
+    precoRef = lerNumero(precoTexto);
+    if (isNaN(precoRef) || precoRef < 0){ alert('Preço de referência inválido. Use números, ex.: 5,50 — ou deixe vazio.'); return false; }
+  }
   const campos = {
     nome,
     categoria: document.getElementById('prodCategoria').value,
     unidade: document.getElementById('prodUnidade').value,
-    minimoManual
+    minimoManual, precoRef
   };
+  recarregarSeMudou();
   let pid;
   if (id){
     Object.assign(produtoPorId(Number(id)), campos);
@@ -992,6 +1215,7 @@ function excluirProduto(){
     ? `Excluir "${p.nome}" apaga também os ${nMovs} movimentos dele (entradas e saídas). Tem certeza?`
     : `Excluir o produto "${p.nome}"?`;
   if (!confirm(msg)) return;
+  recarregarSeMudou();
   dados.produtos = dados.produtos.filter(x => x.id !== pid);
   dados.entradas = dados.entradas.filter(x => x.produtoId !== pid);
   dados.saidas = dados.saidas.filter(x => x.produtoId !== pid);
@@ -1002,9 +1226,17 @@ function excluirProduto(){
 /* ---------- excluir movimento ---------- */
 function excluirMovimento(tipo, id){
   if (!confirm('Excluir este movimento? O saldo será recalculado.')) return;
+  recarregarSeMudou();
   if (tipo === 'entrada') dados.entradas = dados.entradas.filter(e => e.id !== id);
   else dados.saidas = dados.saidas.filter(s => s.id !== id);
   salvar(); render();
+  // confere se ficou gravado de verdade
+  const gravado = localStorage.getItem(CHAVE) || '';
+  const lista = tipo === 'entrada' ? 'entradas' : 'saidas';
+  try{
+    const conf = JSON.parse(gravado);
+    if (conf[lista].some(x => x.id === id)) alert('Atenção: a exclusão NÃO ficou gravada. Feche outras janelas do sistema e tente de novo.');
+  }catch(e){ /* sem confirmação possível */ }
 }
 
 /* ---------- backup / restauração / CSV ---------- */
@@ -1054,16 +1286,40 @@ function exportarCSV(){
   const num = n => (n === null || n === undefined || isNaN(n)) ? '' : String(Math.round(n * 100) / 100).replace('.', ',');
   const linhas = [
     ['Produto', 'Categoria', 'Unidade', 'Saldo atual', 'Consumo por dia', 'Consumo por semana',
-     'Consumo ultimos 30 dias', 'Estoque minimo 1 dia', 'Estoque medio', 'Proxima validade', 'Situacao', 'Sugestao de compra'].join(sep)
+     'Consumo ultimos 30 dias', 'Consumo acumulado', 'Estoque minimo 1 dia', 'Estoque medio',
+     'Preco unitario R$', 'Valor em estoque R$', 'Gasto consumo 30 dias R$', 'Gasto consumo acumulado R$',
+     'Proxima validade', 'Situacao', 'Sugestao de compra', 'Custo estimado compra R$'].join(sep)
   ];
   for (const p of dados.produtos.slice().sort((a, b) => a.categoria.localeCompare(b.categoria) || a.nome.localeCompare(b.nome, 'pt-BR'))){
     const s = estatisticasDe(p.id);
     linhas.push([
       `"${p.nome}"`, `"${p.categoria}"`, p.unidade, num(s.saldo), num(s.consumoDia), num(s.consumoSemana),
-      num(s.consumo30), num(s.minimo1dia), num(s.estoqueMedio),
+      num(s.consumo30), num(s.consumoTotal), num(s.minimo1dia), num(s.estoqueMedio),
+      num(s.precoUnit), num(s.valorEstoque), num(s.custo30), num(s.custoTotal),
       s.proximaValidade ? fmtData(s.proximaValidade) : '',
       s.etiquetas.map(e => e.texto).join(' + '),
-      num(s.sugestaoCompra)
+      num(s.sugestaoCompra), num(s.custoSugestao)
+    ].join(sep));
+  }
+  // segunda parte do arquivo: todos os movimentos
+  linhas.push('');
+  linhas.push(['MOVIMENTOS'].join(sep));
+  linhas.push(['Data', 'Tipo', 'Produto', 'Quantidade', 'Unidade', 'Preco unitario R$', 'Valor R$', 'Fornecedor', 'Fabricacao', 'Validade', 'Temperatura C', 'Observacao'].join(sep));
+  const custos = new Map();
+  for (const p of dados.produtos) for (const [id, c] of alocarLotes(p.id).custoDe) custos.set(id, c);
+  const movs = [
+    ...dados.entradas.map(e => ({tipo: 'Entrada', ...e})),
+    ...dados.saidas.map(x => ({tipo: 'Saida', ...x}))
+  ].sort((a, b) => a.data.localeCompare(b.data) || a.id - b.id);
+  for (const m of movs){
+    const p = produtoPorId(m.produtoId);
+    if (!p) continue;
+    const valor = m.tipo === 'Entrada' ? (temNumero(m.precoUnit) ? m.qtd * m.precoUnit : null) : custos.get(m.id);
+    linhas.push([
+      fmtData(m.data), m.tipo, `"${p.nome}"`, num(m.qtd), p.unidade,
+      m.tipo === 'Entrada' ? num(m.precoUnit) : '', num(valor),
+      `"${m.fornecedor || ''}"`, m.fabricacao ? fmtData(m.fabricacao) : '', m.validade ? fmtData(m.validade) : '',
+      num(m.temperatura), `"${m.obs || ''}"`
     ].join(sep));
   }
   baixarArquivo(`estoque-${hojeISO()}.csv`, '\uFEFF' + linhas.join('\r\n'), 'text/csv;charset=utf-8');
